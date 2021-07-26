@@ -139,7 +139,7 @@ func GetNodeIDFromCSINode(driver string, csiNode *storage.CSINode) (string, bool
 }
 
 // GetVolumeCapabilities returns volumecapability from PV spec
-func GetVolumeCapabilities(pvSpec *v1.PersistentVolumeSpec) (*csi.VolumeCapability, error) {
+func GetVolumeCapabilities(pvSpec *v1.PersistentVolumeSpec, readonly bool) (*csi.VolumeCapability, error) {
 	m := map[v1.PersistentVolumeAccessMode]bool{}
 	for _, mode := range pvSpec.AccessModes {
 		m[mode] = true
@@ -182,8 +182,13 @@ func GetVolumeCapabilities(pvSpec *v1.PersistentVolumeSpec) (*csi.VolumeCapabili
 		cap.AccessMode.Mode = csi.VolumeCapability_AccessMode_MULTI_NODE_MULTI_WRITER
 
 	case m[v1.ReadOnlyMany] && m[v1.ReadWriteOnce]:
-		// This is no way how to translate this to CSI...
-		return nil, fmt.Errorf("CSI does not support ReadOnlyMany and ReadWriteOnce on the same PersistentVolume")
+		// based on following comments trying to allow one volume with ROX and RWO access modes together
+		// https://github.com/kubernetes-csi/external-attacher/issues/153#issuecomment-500347886
+		if readonly {
+			cap.AccessMode.Mode = csi.VolumeCapability_AccessMode_MULTI_NODE_READER_ONLY
+		} else {
+			cap.AccessMode.Mode = csi.VolumeCapability_AccessMode_SINGLE_NODE_WRITER
+		}
 
 	case m[v1.ReadOnlyMany]:
 		// There is only ReadOnlyMany set
