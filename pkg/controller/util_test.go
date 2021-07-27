@@ -121,8 +121,8 @@ func TestGetVolumeCapabilities(t *testing.T) {
 		{
 			name:               "ROX+RWO",
 			modes:              []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce, v1.ReadOnlyMany},
-			expectedCapability: nil,
-			expectError:        true, // not possible in CSI
+			expectedCapability: createMountCapability(defaultFSType, csi.VolumeCapability_AccessMode_SINGLE_NODE_WRITER, nil),
+			expectError:        false,
 		},
 		{
 			name:               "nothing",
@@ -145,7 +145,7 @@ func TestGetVolumeCapabilities(t *testing.T) {
 				},
 			},
 		}
-		cap, err := GetVolumeCapabilities(&pv.Spec)
+		cap, err := GetVolumeCapabilities(&pv.Spec, false)
 
 		if err == nil && test.expectError {
 			t.Errorf("test %s: expected error, got none", test.name)

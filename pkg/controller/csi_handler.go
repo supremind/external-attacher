@@ -24,6 +24,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/kubernetes-csi/csi-lib-utils/connection"
 	"github.com/kubernetes-csi/external-attacher/pkg/attacher"
 	v1 "k8s.io/api/core/v1"
@@ -61,6 +62,7 @@ type csiHandler struct {
 	client                  kubernetes.Interface
 	attacherName            string
 	attacher                attacher.Attacher
+	poLister                corelisters.PodLister
 	CSIVolumeLister         VolumeLister
 	pvLister                corelisters.PersistentVolumeLister
 	csiNodeLister           storagelisters.CSINodeLister
@@ -80,6 +82,7 @@ func NewCSIHandler(
 	client kubernetes.Interface,
 	attacherName string,
 	attacher attacher.Attacher,
+	poLister corelisters.PodLister,
 	CSIVolumeLister VolumeLister,
 	pvLister corelisters.PersistentVolumeLister,
 	csiNodeLister storagelisters.CSINodeLister,
@@ -92,6 +95,7 @@ func NewCSIHandler(
 		client:                  client,
 		attacherName:            attacherName,
 		attacher:                attacher,
+		poLister:                poLister,
 		CSIVolumeLister:         CSIVolumeLister,
 		pvLister:                pvLister,
 		csiNodeLister:           csiNodeLister,
@@ -478,7 +482,12 @@ func (h *csiHandler) csiAttach(va *storage.VolumeAttachment) (*storage.VolumeAtt
 		return va, nil, err
 	}
 
-	volumeHandle, readOnly, err := GetVolumeHandle(csiSource)
+	volumeHandle, _, err := GetVolumeHandle(csiSource)
+	if err != nil {
+		return va, nil, err
+	}
+
+	readOnly, err := h.checkIfReadonlyMount(va)
 	if err != nil {
 		return va, nil, err
 	}
@@ -488,10 +497,30 @@ func (h *csiHandler) csiAttach(va *storage.VolumeAttachment) (*storage.VolumeAtt
 		readOnly = false
 	}
 
-	volumeCapabilities, err := GetVolumeCapabilities(pvSpec)
+	volumeCapabilities, err := GetVolumeCapabilities(pvSpec, readOnly)
 	if err != nil {
 		return va, nil, err
 	}
+
+	if volumeCapabilities.AccessMode.Mode == csi.VolumeCapability_AccessMode_MULTI_NODE_READER_ONLY {
+		rox, err := h.checkIfROXMount(va)
+		if err != nil {
+			return va, nil, err
+		}
+		if !rox {
+			return va, nil, errors.New("volume may be attached to another node read/write already, can not be attached read only anymore")
+		}
+	}
+	if volumeCapabilities.AccessMode.Mode == csi.VolumeCapability_AccessMode_SINGLE_NODE_WRITER {
+		attached, err := h.checkIfAttachedToOtherNodes(va)
+		if err != nil {
+			return va, nil, err
+		}
+		if attached {
+			return va, nil, errors.New("volume is already attached to another node, can not be attached r/w anymore")
+		}
+	}
+
 	secrets, err := h.getCredentialsFromPV(csiSource)
 	if err != nil {
 		return va, nil, err
@@ -521,6 +550,8 @@ func (h *csiHandler) csiAttach(va *storage.VolumeAttachment) (*storage.VolumeAtt
 	if err != nil {
 		return va, nil, err
 	}
+
+	publishInfo[readonlyAttachmentKey] = strconv.FormatBool(readOnly)
 
 	return va, publishInfo, nil
 }
