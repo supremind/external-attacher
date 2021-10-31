@@ -133,6 +133,7 @@ func runTests(t *testing.T, handlerFactory handlerFactory, tests []testCase) {
 		client := fake.NewSimpleClientset(coreObjs...)
 		informers := informers.NewSharedInformerFactory(client, time.Hour /* disable resync*/)
 		vaInformer := informers.Storage().V1().VolumeAttachments()
+		poInformer := informers.Core().V1().Pods()
 		pvInformer := informers.Core().V1().PersistentVolumes()
 		nodeInformer := informers.Core().V1().Nodes()
 		csiNodeInformer := informers.Storage().V1().CSINodes()
@@ -149,6 +150,8 @@ func runTests(t *testing.T, handlerFactory handlerFactory, tests []testCase) {
 				// Secrets are not cached in any informer
 			case *storage.CSINode:
 				csiNodeInformer.Informer().GetStore().Add(obj)
+			case *v1.Pod:
+				poInformer.Informer().GetStore().Add(obj)
 			default:
 				t.Fatalf("Unknown initalObject type: %+v", obj)
 			}

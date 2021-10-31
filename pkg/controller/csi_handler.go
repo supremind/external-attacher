@@ -485,7 +485,7 @@ func (h *csiHandler) csiAttach(va *storage.VolumeAttachment) (*storage.VolumeAtt
 	volumeHandle, _, err := GetVolumeHandle(csiSource)
 	if err != nil {
 		return va, nil, err
-	}
+	} // check readonly flag in here or readonly.go?
 
 	readOnly, err := h.checkIfReadonlyMount(va)
 	if err != nil {
@@ -550,8 +550,10 @@ func (h *csiHandler) csiAttach(va *storage.VolumeAttachment) (*storage.VolumeAtt
 	if err != nil {
 		return va, nil, err
 	}
-
-	publishInfo[readonlyAttachmentKey] = strconv.FormatBool(readOnly)
+	if _, ok := publishInfo[readonlyAttachmentKey]; ok {
+		publishInfo[readonlyAttachmentKey] = strconv.FormatBool(readOnly)
+	}
+	// fix
 
 	return va, publishInfo, nil
 }
