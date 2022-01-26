@@ -102,6 +102,15 @@ func pod() *v1.Pod {
 						}},
 				},
 			},
+			Containers: []v1.Container{
+				{
+					VolumeMounts: []v1.VolumeMount{
+						{
+							ReadOnly: false,
+						},
+					},
+				},
+			},
 		},
 	}
 }

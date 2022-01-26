@@ -57,6 +57,8 @@ type CSIAttachController struct {
 	vaListerSynced cache.InformerSynced
 	pvLister       corelisters.PersistentVolumeLister
 	pvListerSynced cache.InformerSynced
+	poLister       corelisters.PodLister
+	poListerSynced cache.InformerSynced
 
 	shouldReconcileVolumeAttachment bool
 	reconcileSync                   time.Duration
@@ -82,7 +84,7 @@ type Handler interface {
 }
 
 // NewCSIAttachController returns a new *CSIAttachController
-func NewCSIAttachController(client kubernetes.Interface, attacherName string, handler Handler, volumeAttachmentInformer storageinformers.VolumeAttachmentInformer, pvInformer coreinformers.PersistentVolumeInformer, vaRateLimiter, paRateLimiter workqueue.RateLimiter, shouldReconcileVolumeAttachment bool, reconcileSync time.Duration) *CSIAttachController {
+func NewCSIAttachController(client kubernetes.Interface, attacherName string, handler Handler, volumeAttachmentInformer storageinformers.VolumeAttachmentInformer, pvInformer coreinformers.PersistentVolumeInformer, poInformer coreinformers.PodInformer, vaRateLimiter, paRateLimiter workqueue.RateLimiter, shouldReconcileVolumeAttachment bool, reconcileSync time.Duration) *CSIAttachController {
 	broadcaster := record.NewBroadcaster()
 	broadcaster.StartRecordingToSink(&corev1.EventSinkImpl{Interface: client.CoreV1().Events(v1.NamespaceAll)})
 	var eventRecorder record.EventRecorder
@@ -113,8 +115,17 @@ func NewCSIAttachController(client kubernetes.Interface, attacherName string, ha
 		UpdateFunc: ctrl.pvUpdated,
 		//DeleteFunc: ctrl.pvDeleted, TODO: do we need this?
 	})
+
+	// poInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+	// 	AddFunc: ctrl.poAdded,
+	// })
+	// needed for pods???
+
 	ctrl.pvLister = pvInformer.Lister()
 	ctrl.pvListerSynced = pvInformer.Informer().HasSynced
+
+	ctrl.poLister = poInformer.Lister()
+	ctrl.poListerSynced = poInformer.Informer().HasSynced
 	ctrl.handler.Init(ctrl.vaQueue, ctrl.pvQueue)
 
 	return ctrl
@@ -195,6 +206,12 @@ func (ctrl *CSIAttachController) pvUpdated(old, new interface{}) {
 	}
 	ctrl.pvQueue.Add(pv.Name)
 }
+
+// // poAdded reacts to a pod creation
+// func (ctrl *CSIAttachController) poAdded(obj interface{}) {
+// 	po := obj.(*v1.Pod)
+// 	ctrl.poQueue.Add(po.Name)
+// }
 
 // syncVA deals with one key off the queue.  It returns false when it's time to quit.
 func (ctrl *CSIAttachController) syncVA() {

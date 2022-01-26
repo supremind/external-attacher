@@ -553,7 +553,6 @@ func (h *csiHandler) csiAttach(va *storage.VolumeAttachment) (*storage.VolumeAtt
 	if _, ok := publishInfo[readonlyAttachmentKey]; ok {
 		publishInfo[readonlyAttachmentKey] = strconv.FormatBool(readOnly)
 	}
-	// fix
 
 	return va, publishInfo, nil
 }

@@ -55,7 +55,13 @@ func (h *csiHandler) checkIfReadonlyMount(va *storage.VolumeAttachment) (bool, e
 			if vol.PersistentVolumeClaim != nil {
 				if vol.PersistentVolumeClaim.ClaimName == claim.Name {
 					if !vol.PersistentVolumeClaim.ReadOnly {
-						return false, nil
+						for _, con := range po.Spec.Containers {
+							for _, vm := range con.VolumeMounts {
+								if !vm.ReadOnly {
+									return false, nil
+								}
+							}
+						}
 					}
 				}
 			}
