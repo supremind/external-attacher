@@ -95,6 +95,7 @@ func pod() *v1.Pod {
 			NodeName: "node1",
 			Volumes: []v1.Volume{
 				{
+					Name: "vol1",
 					VolumeSource: v1.VolumeSource{
 						PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
 							ClaimName: "foo-pvc",
@@ -104,8 +105,28 @@ func pod() *v1.Pod {
 			},
 			Containers: []v1.Container{
 				{
+					Name: "con1",
+					VolumeMounts: []v1.VolumeMount{
+
+						{
+							Name:     "vol1",
+							ReadOnly: false,
+						},
+					},
+				},
+				{
 					VolumeMounts: []v1.VolumeMount{
 						{
+							Name:     "vol2",
+							ReadOnly: false,
+						},
+					},
+				},
+				{
+					Name: "con2",
+					VolumeMounts: []v1.VolumeMount{
+						{
+							Name:     "vol3",
 							ReadOnly: false,
 						},
 					},
@@ -115,10 +136,26 @@ func pod() *v1.Pod {
 	}
 }
 
+// pvc readonly
 func podReadonlyTrue(po *v1.Pod) *v1.Pod {
 	for _, vol := range po.Spec.Volumes {
 		vol.PersistentVolumeClaim.ReadOnly = true
 	}
+	return po
+}
+
+// pvc == false container only support readonly mounts
+func podVolMountReadonlyTrue(po *v1.Pod) *v1.Pod {
+	po.Spec.Containers = []v1.Container{
+		{
+			Name: "con1",
+			VolumeMounts: []v1.VolumeMount{
+				{
+					Name:     "vol1",
+					ReadOnly: true,
+				},
+			},
+		}}
 	return po
 }
 
@@ -204,6 +241,14 @@ func pvDeleted(pv *v1.PersistentVolume) *v1.PersistentVolume {
 
 func pvWithAttributes(pv *v1.PersistentVolume, attributes map[string]string) *v1.PersistentVolume {
 	pv.Spec.PersistentVolumeSource.CSI.VolumeAttributes = attributes
+	return pv
+}
+
+func pvAccessModeROXandRWO(pv *v1.PersistentVolume) *v1.PersistentVolume {
+	pv.Spec.AccessModes = []v1.PersistentVolumeAccessMode{
+		v1.ReadWriteOnce,
+		v1.ReadOnlyMany,
+	}
 	return pv
 }
 
@@ -375,7 +420,24 @@ func TestCSIHandler(t *testing.T) {
 		},
 		{
 			name:           "readOnly VolumeAttachment added -> successful attachment",
-			initialObjects: []runtime.Object{pvReadOnly(pvWithFinalizer()), csiNode(), podReadonlyTrue(pod())},
+			initialObjects: []runtime.Object{pvAccessModeROXandRWO(pvWithFinalizer()), csiNode(), podReadonlyTrue(pod())},
+			addedVA:        va(false /*attached*/, "" /*finalizer*/, nil /* annotations */),
+			expectedActions: []core.Action{
+				// Finalizer is saved first
+				core.NewPatchAction(vaGroupResourceVersion, metav1.NamespaceNone, testPVName+"-"+testNodeName,
+					types.MergePatchType, patch(va(false /*attached*/, "" /*finalizer*/, nil /* annotations */),
+						va(false /*attached*/, fin, ann))),
+				core.NewPatchSubresourceAction(vaGroupResourceVersion, metav1.NamespaceNone, testPVName+"-"+testNodeName,
+					types.MergePatchType, patch(va(false /*attached*/, fin, ann),
+						va(true /*attached*/, fin, ann)), "status"),
+			},
+			expectedCSICalls: []csiCall{
+				{"attach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readOnly, success, notDetached, noMetadata, 0},
+			},
+		},
+		{
+			name:           "readonly volumeattachement with volmounts added -> successful attachment",
+			initialObjects: []runtime.Object{pvAccessModeROXandRWO(pvWithFinalizer()), csiNode(), podVolMountReadonlyTrue(pod())},
 			addedVA:        va(false /*attached*/, "" /*finalizer*/, nil /* annotations */),
 			expectedActions: []core.Action{
 				// Finalizer is saved first
