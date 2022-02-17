@@ -116,11 +116,6 @@ func NewCSIAttachController(client kubernetes.Interface, attacherName string, ha
 		//DeleteFunc: ctrl.pvDeleted, TODO: do we need this?
 	})
 
-	// poInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-	// 	AddFunc: ctrl.poAdded,
-	// })
-	// needed for pods???
-
 	ctrl.pvLister = pvInformer.Lister()
 	ctrl.pvListerSynced = pvInformer.Informer().HasSynced
 
@@ -206,12 +201,6 @@ func (ctrl *CSIAttachController) pvUpdated(old, new interface{}) {
 	}
 	ctrl.pvQueue.Add(pv.Name)
 }
-
-// // poAdded reacts to a pod creation
-// func (ctrl *CSIAttachController) poAdded(obj interface{}) {
-// 	po := obj.(*v1.Pod)
-// 	ctrl.poQueue.Add(po.Name)
-// }
 
 // syncVA deals with one key off the queue.  It returns false when it's time to quit.
 func (ctrl *CSIAttachController) syncVA() {
