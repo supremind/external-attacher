@@ -371,7 +371,8 @@ func TestCSIHandler(t *testing.T) {
 		Resource: "secrets",
 	}
 
-	var noMetadata map[string]string
+	roMetadata := map[string]string{readonlyAttachmentKey: "true"}
+	rwMetadata := map[string]string{readonlyAttachmentKey: "false"}
 	var noAttrs map[string]string
 	var noSecrets map[string]string
 	var notDetached = false
@@ -396,10 +397,10 @@ func TestCSIHandler(t *testing.T) {
 						va(false /*attached*/, fin, ann))),
 				core.NewPatchSubresourceAction(vaGroupResourceVersion, metav1.NamespaceNone, testPVName+"-"+testNodeName,
 					types.MergePatchType, patch(va(false /*attached*/, fin, ann),
-						va(true /*attached*/, fin, ann)), "status"),
+						vaWithMetadata(va(true /*attached*/, fin, ann), map[string]string{readonlyAttachmentKey: "false"})), "status"),
 			},
 			expectedCSICalls: []csiCall{
-				{"attach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readWrite, success, notDetached, noMetadata, 0},
+				{"attach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readWrite, success, notDetached, rwMetadata, 0},
 			},
 		},
 		{
@@ -412,10 +413,10 @@ func TestCSIHandler(t *testing.T) {
 						va(false /*attached*/, fin, ann))),
 				core.NewPatchSubresourceAction(vaGroupResourceVersion, metav1.NamespaceNone, testPVName+"-"+testNodeName,
 					types.MergePatchType, patch(va(false /*attached*/, fin, ann),
-						va(true /*attached*/, fin, ann)), "status"),
+						vaWithMetadata(va(true /*attached*/, fin, ann), map[string]string{readonlyAttachmentKey: "false"})), "status"),
 			},
 			expectedCSICalls: []csiCall{
-				{"attach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readWrite, success, notDetached, noMetadata, 0},
+				{"attach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readWrite, success, notDetached, rwMetadata, 0},
 			},
 		},
 		{
@@ -429,10 +430,10 @@ func TestCSIHandler(t *testing.T) {
 						va(false /*attached*/, fin, ann))),
 				core.NewPatchSubresourceAction(vaGroupResourceVersion, metav1.NamespaceNone, testPVName+"-"+testNodeName,
 					types.MergePatchType, patch(va(false /*attached*/, fin, ann),
-						va(true /*attached*/, fin, ann)), "status"),
+						vaWithMetadata(va(true /*attached*/, fin, ann), map[string]string{readonlyAttachmentKey: "true"})), "status"),
 			},
 			expectedCSICalls: []csiCall{
-				{"attach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readOnly, success, notDetached, noMetadata, 0},
+				{"attach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readOnly, success, notDetached, roMetadata, 0},
 			},
 		},
 		{
@@ -446,10 +447,10 @@ func TestCSIHandler(t *testing.T) {
 						va(false /*attached*/, fin, ann))),
 				core.NewPatchSubresourceAction(vaGroupResourceVersion, metav1.NamespaceNone, testPVName+"-"+testNodeName,
 					types.MergePatchType, patch(va(false /*attached*/, fin, ann),
-						va(true /*attached*/, fin, ann)), "status"),
+						vaWithMetadata(va(true /*attached*/, fin, ann), map[string]string{readonlyAttachmentKey: "true"})), "status"),
 			},
 			expectedCSICalls: []csiCall{
-				{"attach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readOnly, success, notDetached, noMetadata, 0},
+				{"attach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readOnly, success, notDetached, roMetadata, 0},
 			},
 		},
 		{
@@ -462,10 +463,10 @@ func TestCSIHandler(t *testing.T) {
 						va(false /*attached*/, fin, ann))),
 				core.NewPatchSubresourceAction(vaGroupResourceVersion, metav1.NamespaceNone, testPVName+"-"+testNodeName,
 					types.MergePatchType, patch(va(false /*attached*/, fin, ann),
-						va(true /*attached*/, fin, ann)), "status"),
+						vaWithMetadata(va(true /*attached*/, fin, ann), map[string]string{readonlyAttachmentKey: "true"})), "status"),
 			},
 			expectedCSICalls: []csiCall{
-				{"attach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readOnly, success, notDetached, noMetadata, 0},
+				{"attach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readOnly, success, notDetached, roMetadata, 0},
 			},
 		},
 		{
@@ -479,10 +480,10 @@ func TestCSIHandler(t *testing.T) {
 						va(false /*attached*/, fin, ann))),
 				core.NewPatchSubresourceAction(vaGroupResourceVersion, metav1.NamespaceNone, testPVName+"-"+testNodeName,
 					types.MergePatchType, patch(va(false /*attached*/, fin, ann),
-						va(true /*attached*/, fin, ann)), "status"),
+						vaWithMetadata(va(true /*attached*/, fin, ann), map[string]string{readonlyAttachmentKey: "false"})), "status"),
 			},
 			expectedCSICalls: []csiCall{
-				{"attach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readWrite, success, notDetached, noMetadata, 0},
+				{"attach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readWrite, success, notDetached, rwMetadata, 0},
 			},
 		},
 		{
@@ -496,10 +497,10 @@ func TestCSIHandler(t *testing.T) {
 						va(false /*attached*/, fin, ann))),
 				core.NewPatchSubresourceAction(vaGroupResourceVersion, metav1.NamespaceNone, testPVName+"-"+testNodeName,
 					types.MergePatchType, patch(va(false /*attached*/, fin, ann),
-						va(true /*attached*/, fin, ann)), "status"),
+						vaWithMetadata(va(true /*attached*/, fin, ann), map[string]string{readonlyAttachmentKey: "false"})), "status"),
 			},
 			expectedCSICalls: []csiCall{
-				{"attach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readWrite, success, notDetached, noMetadata, 0},
+				{"attach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readWrite, success, notDetached, rwMetadata, 0},
 			},
 		},
 		{
@@ -513,10 +514,10 @@ func TestCSIHandler(t *testing.T) {
 						va(false /*attached*/, fin, ann))),
 				core.NewPatchSubresourceAction(vaGroupResourceVersion, metav1.NamespaceNone, testPVName+"-"+testNodeName,
 					types.MergePatchType, patch(va(false /*attached*/, fin, ann),
-						va(true /*attached*/, fin, ann)), "status"),
+						vaWithMetadata(va(true /*attached*/, fin, ann), map[string]string{readonlyAttachmentKey: "false"})), "status"),
 			},
 			expectedCSICalls: []csiCall{
-				{"attach", testVolumeHandle, testNodeID, map[string]string{"foo": "bar"}, noSecrets, readWrite, success, notDetached, noMetadata, 0},
+				{"attach", testVolumeHandle, testNodeID, map[string]string{"foo": "bar"}, noSecrets, readWrite, success, notDetached, rwMetadata, 0},
 			},
 		},
 		{
@@ -530,10 +531,10 @@ func TestCSIHandler(t *testing.T) {
 						va(false /*attached*/, fin, ann))),
 				core.NewPatchSubresourceAction(vaGroupResourceVersion, metav1.NamespaceNone, testPVName+"-"+testNodeName,
 					types.MergePatchType, patch(va(false /*attached*/, fin, ann),
-						va(true /*attached*/, fin, ann)), "status"),
+						vaWithMetadata(va(true /*attached*/, fin, ann), map[string]string{readonlyAttachmentKey: "false"})), "status"),
 			},
 			expectedCSICalls: []csiCall{
-				{"attach", testVolumeHandle, testNodeID, map[string]string{"foo": "bar"}, noSecrets, readWrite, success, notDetached, noMetadata, 0},
+				{"attach", testVolumeHandle, testNodeID, map[string]string{"foo": "bar"}, noSecrets, readWrite, success, notDetached, rwMetadata, 0},
 			},
 		},
 		{
@@ -548,10 +549,10 @@ func TestCSIHandler(t *testing.T) {
 						va(false /*attached*/, fin, ann))),
 				core.NewPatchSubresourceAction(vaGroupResourceVersion, metav1.NamespaceNone, testPVName+"-"+testNodeName,
 					types.MergePatchType, patch(va(false /*attached*/, fin, ann),
-						va(true /*attached*/, fin, ann)), "status"),
+						vaWithMetadata(va(true /*attached*/, fin, ann), map[string]string{readonlyAttachmentKey: "false"})), "status"),
 			},
 			expectedCSICalls: []csiCall{
-				{"attach", testVolumeHandle, testNodeID, noAttrs, map[string]string{"foo": "bar"}, readWrite, success, notDetached, noMetadata, 0},
+				{"attach", testVolumeHandle, testNodeID, noAttrs, map[string]string{"foo": "bar"}, readWrite, success, notDetached, rwMetadata, 0},
 			},
 		},
 		{
@@ -566,10 +567,10 @@ func TestCSIHandler(t *testing.T) {
 						va(false /*attached*/, fin, ann))),
 				core.NewPatchSubresourceAction(vaGroupResourceVersion, metav1.NamespaceNone, testPVName+"-"+testNodeName,
 					types.MergePatchType, patch(va(false /*attached*/, fin, ann),
-						va(true /*attached*/, fin, ann)), "status"),
+						vaWithMetadata(va(true /*attached*/, fin, ann), map[string]string{readonlyAttachmentKey: "false"})), "status"),
 			},
 			expectedCSICalls: []csiCall{
-				{"attach", testVolumeHandle, testNodeID, noAttrs, map[string]string{"foo": "bar"}, readWrite, success, notDetached, noMetadata, 0},
+				{"attach", testVolumeHandle, testNodeID, noAttrs, map[string]string{"foo": "bar"}, readWrite, success, notDetached, rwMetadata, 0},
 			},
 		},
 		{
@@ -584,10 +585,10 @@ func TestCSIHandler(t *testing.T) {
 						va(false /*attached*/, fin, ann))),
 				core.NewPatchSubresourceAction(vaGroupResourceVersion, metav1.NamespaceNone, testPVName+"-"+testNodeName,
 					types.MergePatchType, patch(va(false /*attached*/, fin, ann),
-						va(true /*attached*/, fin, ann)), "status"),
+						vaWithMetadata(va(true /*attached*/, fin, ann), map[string]string{readonlyAttachmentKey: "false"})), "status"),
 			},
 			expectedCSICalls: []csiCall{
-				{"attach", testVolumeHandle, testNodeID, noAttrs, map[string]string{}, readWrite, success, notDetached, noMetadata, 0},
+				{"attach", testVolumeHandle, testNodeID, noAttrs, map[string]string{}, readWrite, success, notDetached, rwMetadata, 0},
 			},
 		},
 		{
@@ -602,10 +603,10 @@ func TestCSIHandler(t *testing.T) {
 						va(false /*attached*/, fin, ann))),
 				core.NewPatchSubresourceAction(vaGroupResourceVersion, metav1.NamespaceNone, testPVName+"-"+testNodeName,
 					types.MergePatchType, patch(va(false /*attached*/, fin, ann),
-						va(true /*attached*/, fin, ann)), "status"),
+						vaWithMetadata(va(true /*attached*/, fin, ann), map[string]string{readonlyAttachmentKey: "false"})), "status"),
 			},
 			expectedCSICalls: []csiCall{
-				{"attach", testVolumeHandle, testNodeID, noAttrs, map[string]string{}, readWrite, success, notDetached, noMetadata, 0},
+				{"attach", testVolumeHandle, testNodeID, noAttrs, map[string]string{}, readWrite, success, notDetached, rwMetadata, 0},
 			},
 		},
 		{
@@ -638,10 +639,10 @@ func TestCSIHandler(t *testing.T) {
 						va(false /*attached*/, fin, ann))),
 				core.NewPatchSubresourceAction(vaGroupResourceVersion, metav1.NamespaceNone, testPVName+"-"+testNodeName,
 					types.MergePatchType, patch(va(false /*attached*/, fin, ann),
-						va(true /*attached*/, fin, ann)), "status"),
+						vaWithMetadata(va(true /*attached*/, fin, ann), map[string]string{readonlyAttachmentKey: "false"})), "status"),
 			},
 			expectedCSICalls: []csiCall{
-				{"attach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readWrite, success, notDetached, noMetadata, 0},
+				{"attach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readWrite, success, notDetached, rwMetadata, 0},
 			},
 		},
 		{
@@ -692,9 +693,9 @@ func TestCSIHandler(t *testing.T) {
 					types.MergePatchType, patch(
 						vaWithAttachError(va(false, fin, ann),
 							"could not add PersistentVolume finalizer: persistentvolume \"pv1\" is forbidden: Mock error"),
-						va(true, fin, ann)), "status")},
+						vaWithMetadata(va(true, fin, ann), map[string]string{readonlyAttachmentKey: "false"})), "status")},
 			expectedCSICalls: []csiCall{
-				{"attach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readWrite, success, notDetached, noMetadata, 0},
+				{"attach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readWrite, success, notDetached, rwMetadata, 0},
 			},
 		},
 		{
@@ -726,7 +727,7 @@ func TestCSIHandler(t *testing.T) {
 					types.MergePatchType, patch(va(false /*attached*/, "", nil), va(false /*attached*/, fin, ann))),
 				core.NewPatchSubresourceAction(vaGroupResourceVersion, metav1.NamespaceNone, testPVName+"-"+testNodeName,
 					types.MergePatchType, patch(va(false /*attached*/, fin, ann),
-						vaWithMetadata(va(true, fin, ann), map[string]string{"foo": "bar"})), "status"),
+						vaWithMetadata(va(true, fin, ann), map[string]string{"foo": "bar", readonlyAttachmentKey: "false"})), "status"),
 			},
 			expectedCSICalls: []csiCall{
 				{"attach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readWrite, success, notDetached, map[string]string{"foo": "bar"}, 0},
@@ -856,10 +857,10 @@ func TestCSIHandler(t *testing.T) {
 						va(false /*attached*/, fin, ann))),
 				core.NewPatchSubresourceAction(vaGroupResourceVersion, metav1.NamespaceNone, testPVName+"-"+testNodeName,
 					types.MergePatchType, patch(va(false /*attached*/, fin, ann),
-						va(true /*attached*/, fin, ann)), "status"),
+						vaWithMetadata(va(true /*attached*/, fin, ann), map[string]string{readonlyAttachmentKey: "false"})), "status"),
 			},
 			expectedCSICalls: []csiCall{
-				{"attach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readWrite, success, notDetached, noMetadata, 0},
+				{"attach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readWrite, success, notDetached, rwMetadata, 0},
 			},
 		},
 		{
@@ -890,7 +891,7 @@ func TestCSIHandler(t *testing.T) {
 				// Second save with attached=true fails
 				core.NewPatchSubresourceAction(vaGroupResourceVersion, metav1.NamespaceNone, testPVName+"-"+testNodeName,
 					types.MergePatchType, patch(va(false /*attached*/, fin /*finalizer*/, ann /* annotations */),
-						va(true /*attached*/, fin, ann)), "status"),
+						vaWithMetadata(va(true /*attached*/, fin, ann), map[string]string{readonlyAttachmentKey: "false"})), "status"),
 				// Our implementation of fake PATCH did not store the first VA with annotation + finalizer,
 				// the controller tries to save it again.
 				core.NewPatchAction(vaGroupResourceVersion, metav1.NamespaceNone, testPVName+"-"+testNodeName,
@@ -899,11 +900,11 @@ func TestCSIHandler(t *testing.T) {
 				// Final save that succeeds.
 				core.NewPatchSubresourceAction(vaGroupResourceVersion, metav1.NamespaceNone, testPVName+"-"+testNodeName,
 					types.MergePatchType, patch(va(false /*attached*/, fin /*finalizer*/, ann /* annotations */),
-						va(true /*attached*/, fin, ann)), "status"),
+						vaWithMetadata(va(true /*attached*/, fin, ann), map[string]string{readonlyAttachmentKey: "false"})), "status"),
 			},
 			expectedCSICalls: []csiCall{
-				{"attach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readWrite, success, notDetached, noMetadata, 0},
-				{"attach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readWrite, success, notDetached, noMetadata, 0},
+				{"attach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readWrite, success, notDetached, rwMetadata, 0},
+				{"attach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readWrite, success, notDetached, rwMetadata, 0},
 			},
 		},
 		{
@@ -929,11 +930,11 @@ func TestCSIHandler(t *testing.T) {
 				core.NewPatchSubresourceAction(vaGroupResourceVersion, metav1.NamespaceNone,
 					testPVName+"-"+testNodeName,
 					types.MergePatchType, patch(vaWithAttachError(va(false, fin, ann), "mock error"),
-						va(true /*attached*/, fin, ann)), "status"),
+						vaWithMetadata(va(true /*attached*/, fin, ann), map[string]string{readonlyAttachmentKey: "false"})), "status"),
 			},
 			expectedCSICalls: []csiCall{
-				{"attach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readWrite, fmt.Errorf("mock error"), notDetached, noMetadata, 0},
-				{"attach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readWrite, success, notDetached, noMetadata, 0},
+				{"attach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readWrite, fmt.Errorf("mock error"), notDetached, rwMetadata, 0},
+				{"attach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readWrite, success, notDetached, rwMetadata, 0},
 			},
 		},
 		{
@@ -957,11 +958,11 @@ func TestCSIHandler(t *testing.T) {
 				core.NewPatchSubresourceAction(vaGroupResourceVersion, metav1.NamespaceNone,
 					testPVName+"-"+testNodeName,
 					types.MergePatchType, patch(vaWithAttachError(va(false, fin, ann), "context deadline exceeded"),
-						va(true /*attached*/, fin, ann)), "status"),
+						vaWithMetadata(va(true /*attached*/, fin, ann), map[string]string{readonlyAttachmentKey: "false"})), "status"),
 			},
 			expectedCSICalls: []csiCall{
-				{"attach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readWrite, success, notDetached, noMetadata, 500 * time.Millisecond},
-				{"attach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readWrite, success, notDetached, noMetadata, time.Duration(0)},
+				{"attach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readWrite, success, notDetached, rwMetadata, 500 * time.Millisecond},
+				{"attach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readWrite, success, notDetached, rwMetadata, time.Duration(0)},
 			},
 		},
 		{
@@ -1007,10 +1008,10 @@ func TestCSIHandler(t *testing.T) {
 						va(false /*attached*/, fin, ann))),
 				core.NewPatchSubresourceAction(vaGroupResourceVersion, metav1.NamespaceNone, testPVName+"-"+testNodeName,
 					types.MergePatchType, patch(va(false /*attached*/, fin, ann),
-						va(true /*attached*/, fin, ann)), "status"),
+						vaWithMetadata(va(true /*attached*/, fin, ann), map[string]string{readonlyAttachmentKey: "false"})), "status"),
 			},
 			expectedCSICalls: []csiCall{
-				{"attach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readWrite, success, notDetached, noMetadata, 0},
+				{"attach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readWrite, success, notDetached, rwMetadata, 0},
 			},
 		},
 		{
@@ -1024,11 +1025,11 @@ func TestCSIHandler(t *testing.T) {
 						va(false /*attached*/, fin, ann))),
 				core.NewPatchSubresourceAction(vaGroupResourceVersion, metav1.NamespaceNone, testPVName+"-"+testNodeName,
 					types.MergePatchType, patch(va(false /*attached*/, fin, ann),
-						va(true /*attached*/, fin, ann)), "status"),
+						vaWithMetadata(va(true /*attached*/, fin, ann), map[string]string{readonlyAttachmentKey: "false"})), "status"),
 			},
 			expectedCSICalls: []csiCall{
 				{"attach", "projects/UNSPECIFIED/zones/testZone/disks/testpd", testNodeID,
-					map[string]string{"partition": ""}, noSecrets, readWrite, success, notDetached, noMetadata, 0},
+					map[string]string{"partition": ""}, noSecrets, readWrite, success, notDetached, rwMetadata, 0},
 			},
 		},
 
@@ -1046,8 +1047,9 @@ func TestCSIHandler(t *testing.T) {
 					types.MergePatchType, patch(deleted(va(false, fin, ann)),
 						deleted(va(false /*attached*/, "", ann)))),
 			},
+
 			expectedCSICalls: []csiCall{
-				{"detach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readWrite, success, ignored, noMetadata, 0},
+				{"detach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readWrite, success, ignored, rwMetadata, 0},
 			},
 		},
 		{
@@ -1063,7 +1065,7 @@ func TestCSIHandler(t *testing.T) {
 						deleted(vaWithInlineSpec(va(false /*attached*/, "", ann))))),
 			},
 			expectedCSICalls: []csiCall{
-				{"detach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readWrite, success, ignored, noMetadata, 0},
+				{"detach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readWrite, success, ignored, rwMetadata, 0},
 			},
 		},
 		{
@@ -1080,7 +1082,7 @@ func TestCSIHandler(t *testing.T) {
 						deleted(vaWithInlineSpec(va(false /*attached*/, "", ann))))),
 			},
 			expectedCSICalls: []csiCall{
-				{"detach", testVolumeHandle, testNodeID, noAttrs, map[string]string{"foo": "bar"}, readWrite, success, ignored, noMetadata, 0},
+				{"detach", testVolumeHandle, testNodeID, noAttrs, map[string]string{"foo": "bar"}, readWrite, success, ignored, rwMetadata, 0},
 			},
 		},
 		{
@@ -1099,7 +1101,7 @@ func TestCSIHandler(t *testing.T) {
 							"secret"))), ""),
 			},
 			expectedCSICalls: []csiCall{
-				{"detach", testVolumeHandle, testNodeID, noAttrs, map[string]string{"foo": "bar"}, readWrite, success, ignored, noMetadata, 0},
+				{"detach", testVolumeHandle, testNodeID, noAttrs, map[string]string{"foo": "bar"}, readWrite, success, ignored, rwMetadata, 0},
 			},
 		},
 		{
@@ -1116,7 +1118,7 @@ func TestCSIHandler(t *testing.T) {
 						deleted(va(false /*attached*/, "", ann)))),
 			},
 			expectedCSICalls: []csiCall{
-				{"detach", testVolumeHandle, testNodeID, noAttrs, map[string]string{}, readWrite, success, ignored, noMetadata, 0},
+				{"detach", testVolumeHandle, testNodeID, noAttrs, map[string]string{}, readWrite, success, ignored, rwMetadata, 0},
 			},
 		},
 		{
@@ -1137,7 +1139,7 @@ func TestCSIHandler(t *testing.T) {
 							"emptySecret"))), ""),
 			},
 			expectedCSICalls: []csiCall{
-				{"detach", testVolumeHandle, testNodeID, noAttrs, map[string]string{}, readWrite, success, ignored, noMetadata, 0},
+				{"detach", testVolumeHandle, testNodeID, noAttrs, map[string]string{}, readWrite, success, ignored, rwMetadata, 0},
 			},
 		},
 		{
@@ -1172,8 +1174,8 @@ func TestCSIHandler(t *testing.T) {
 						deleted(va(false, "", ann)))),
 			},
 			expectedCSICalls: []csiCall{
-				{"detach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readWrite, fmt.Errorf("mock error"), ignored, noMetadata, 0},
-				{"detach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readWrite, success, ignored, noMetadata, 0},
+				{"detach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readWrite, fmt.Errorf("mock error"), ignored, rwMetadata, 0},
+				{"detach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readWrite, success, ignored, rwMetadata, 0},
 			},
 		},
 		{
@@ -1193,8 +1195,8 @@ func TestCSIHandler(t *testing.T) {
 						deleted(va(false /*attached*/, "", ann)))),
 			},
 			expectedCSICalls: []csiCall{
-				{"detach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readWrite, success, ignored, noMetadata, 500 * time.Millisecond},
-				{"detach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readWrite, success, ignored, noMetadata, time.Duration(0)},
+				{"detach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readWrite, success, ignored, rwMetadata, 500 * time.Millisecond},
+				{"detach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readWrite, success, ignored, rwMetadata, time.Duration(0)},
 			},
 		},
 		{
@@ -1319,7 +1321,7 @@ func TestCSIHandler(t *testing.T) {
 							map[string]string{vaNodeIDAnnotation: "annotatedNodeID"}))), ""),
 			},
 			expectedCSICalls: []csiCall{
-				{"detach", testVolumeHandle, "annotatedNodeID", noAttrs, noSecrets, readWrite, success, detached, noMetadata, 0},
+				{"detach", testVolumeHandle, "annotatedNodeID", noAttrs, noSecrets, readWrite, success, detached, rwMetadata, 0},
 			},
 		},
 		{
@@ -1368,8 +1370,8 @@ func TestCSIHandler(t *testing.T) {
 						deleted(va(false, "", ann))), ""),
 			},
 			expectedCSICalls: []csiCall{
-				{"detach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readWrite, success, detached, noMetadata, 0},
-				{"detach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readWrite, success, detached, noMetadata, 0},
+				{"detach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readWrite, success, detached, rwMetadata, 0},
+				{"detach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readWrite, success, detached, rwMetadata, 0},
 			},
 		},
 		{
@@ -1389,7 +1391,7 @@ func TestCSIHandler(t *testing.T) {
 			},
 			expectedCSICalls: []csiCall{
 				{"detach", "projects/UNSPECIFIED/zones/testZone/disks/testpd", testNodeID,
-					map[string]string{"partition": "0"}, noSecrets, readWrite, success, detached, noMetadata, 0},
+					map[string]string{"partition": "0"}, noSecrets, readWrite, success, detached, rwMetadata, 0},
 			},
 		},
 		//
@@ -1531,7 +1533,7 @@ func TestCSIHandlerReconcileVA(t *testing.T) {
 			expectedActions: []core.Action{
 				core.NewPatchSubresourceAction(vaGroupResourceVersion, metav1.NamespaceNone, testPVName+"-"+testNodeName,
 					types.MergePatchType, patch(va(true /*attached*/, "", nil),
-						va(true, "", nil)), "status"),
+						vaWithMetadata(va(true, "", nil), map[string]string{readonlyAttachmentKey: "false"})), "status"),
 			},
 			expectedCSICalls: []csiCall{
 				{"attach", testVolumeHandle, testNodeID, nil, nil, false, nil, false, nil, 0},
@@ -1584,7 +1586,7 @@ func TestCSIHandlerReadOnly(t *testing.T) {
 		Version:  "v1",
 		Resource: "volumeattachments",
 	}
-	var noMetadata map[string]string
+	rwMetadata := map[string]string{readonlyAttachmentKey: "false"}
 	var noAttrs map[string]string
 	var noSecrets map[string]string
 	var notDetached = false
@@ -1607,10 +1609,10 @@ func TestCSIHandlerReadOnly(t *testing.T) {
 				core.NewPatchSubresourceAction(vaGroupResourceVersion, metav1.NamespaceNone,
 					testPVName+"-"+testNodeName,
 					types.MergePatchType, patch(va(false /*attached*/, fin, ann),
-						va(true /*attached*/, fin, ann)), "status"),
+						vaWithMetadata(va(true /*attached*/, fin, ann), map[string]string{readonlyAttachmentKey: "false"})), "status"),
 			},
 			expectedCSICalls: []csiCall{
-				{"attach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readWrite, success, notDetached, noMetadata, 0},
+				{"attach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readWrite, success, notDetached, rwMetadata, 0},
 			},
 		},
 		{
@@ -1624,10 +1626,10 @@ func TestCSIHandlerReadOnly(t *testing.T) {
 						va(false /*attached*/, fin, ann))),
 				core.NewPatchSubresourceAction(vaGroupResourceVersion, metav1.NamespaceNone, testPVName+"-"+testNodeName,
 					types.MergePatchType, patch(va(false /*attached*/, fin, ann),
-						va(true /*attached*/, fin, ann)), "status"),
+						vaWithMetadata(va(true /*attached*/, fin, ann), map[string]string{readonlyAttachmentKey: "false"})), "status"),
 			},
 			expectedCSICalls: []csiCall{
-				{"attach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readWrite, success, notDetached, noMetadata, 0},
+				{"attach", testVolumeHandle, testNodeID, noAttrs, noSecrets, readWrite, success, notDetached, rwMetadata, 0},
 			},
 		},
 	}

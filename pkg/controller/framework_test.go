@@ -496,7 +496,17 @@ func (f *fakeCSIConnection) Attach(ctx context.Context, volumeID string, readOnl
 	}
 	// Update the published volume map
 	f.lister.Add(call.volumeHandle, call.nodeID)
-	return call.metadata, call.detached, call.err
+
+	ro := "false"
+	if readOnly {
+		ro = "true"
+	}
+	// return call.metadata, call.detached, call.err
+	if len(call.metadata) != 0 {
+		call.metadata[readonlyAttachmentKey] = ro
+		return call.metadata, call.detached, call.err
+	}
+	return map[string]string{readonlyAttachmentKey: ro}, call.detached, call.err
 }
 
 func (f *fakeCSIConnection) Detach(ctx context.Context, volumeID string, nodeID string, secrets map[string]string) error {
