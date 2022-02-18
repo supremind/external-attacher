@@ -550,8 +550,9 @@ func (h *csiHandler) csiAttach(va *storage.VolumeAttachment) (*storage.VolumeAtt
 	if err != nil {
 		return va, nil, err
 	}
-
-	publishInfo[readonlyAttachmentKey] = strconv.FormatBool(readOnly)
+	if _, ok := publishInfo[readonlyAttachmentKey]; !ok {
+		return va, nil, fmt.Errorf("controllerPublishVolume failed to proceed")
+	}
 
 	return va, publishInfo, nil
 }

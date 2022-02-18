@@ -57,6 +57,8 @@ type CSIAttachController struct {
 	vaListerSynced cache.InformerSynced
 	pvLister       corelisters.PersistentVolumeLister
 	pvListerSynced cache.InformerSynced
+	poLister       corelisters.PodLister
+	poListerSynced cache.InformerSynced
 
 	shouldReconcileVolumeAttachment bool
 	reconcileSync                   time.Duration
@@ -82,7 +84,7 @@ type Handler interface {
 }
 
 // NewCSIAttachController returns a new *CSIAttachController
-func NewCSIAttachController(client kubernetes.Interface, attacherName string, handler Handler, volumeAttachmentInformer storageinformers.VolumeAttachmentInformer, pvInformer coreinformers.PersistentVolumeInformer, vaRateLimiter, paRateLimiter workqueue.RateLimiter, shouldReconcileVolumeAttachment bool, reconcileSync time.Duration) *CSIAttachController {
+func NewCSIAttachController(client kubernetes.Interface, attacherName string, handler Handler, volumeAttachmentInformer storageinformers.VolumeAttachmentInformer, pvInformer coreinformers.PersistentVolumeInformer, poInformer coreinformers.PodInformer, vaRateLimiter, paRateLimiter workqueue.RateLimiter, shouldReconcileVolumeAttachment bool, reconcileSync time.Duration) *CSIAttachController {
 	broadcaster := record.NewBroadcaster()
 	broadcaster.StartRecordingToSink(&corev1.EventSinkImpl{Interface: client.CoreV1().Events(v1.NamespaceAll)})
 	var eventRecorder record.EventRecorder
@@ -113,8 +115,12 @@ func NewCSIAttachController(client kubernetes.Interface, attacherName string, ha
 		UpdateFunc: ctrl.pvUpdated,
 		//DeleteFunc: ctrl.pvDeleted, TODO: do we need this?
 	})
+
 	ctrl.pvLister = pvInformer.Lister()
 	ctrl.pvListerSynced = pvInformer.Informer().HasSynced
+
+	ctrl.poLister = poInformer.Lister()
+	ctrl.poListerSynced = poInformer.Informer().HasSynced
 	ctrl.handler.Init(ctrl.vaQueue, ctrl.pvQueue)
 
 	return ctrl

@@ -133,6 +133,7 @@ func runTests(t *testing.T, handlerFactory handlerFactory, tests []testCase) {
 		client := fake.NewSimpleClientset(coreObjs...)
 		informers := informers.NewSharedInformerFactory(client, time.Hour /* disable resync*/)
 		vaInformer := informers.Storage().V1().VolumeAttachments()
+		poInformer := informers.Core().V1().Pods()
 		pvInformer := informers.Core().V1().PersistentVolumes()
 		nodeInformer := informers.Core().V1().Nodes()
 		csiNodeInformer := informers.Storage().V1().CSINodes()
@@ -149,6 +150,8 @@ func runTests(t *testing.T, handlerFactory handlerFactory, tests []testCase) {
 				// Secrets are not cached in any informer
 			case *storage.CSINode:
 				csiNodeInformer.Informer().GetStore().Add(obj)
+			case *v1.Pod:
+				poInformer.Informer().GetStore().Add(obj)
 			default:
 				t.Fatalf("Unknown initalObject type: %+v", obj)
 			}
@@ -180,7 +183,7 @@ func runTests(t *testing.T, handlerFactory handlerFactory, tests []testCase) {
 		lister := &fakeLister{t: t, publishedNodes: test.listerResponse}
 		csiConnection := &fakeCSIConnection{t: t, calls: test.expectedCSICalls, lister: lister}
 		handler := handlerFactory(client, informers, csiConnection, lister)
-		ctrl := NewCSIAttachController(client, testAttacherName, handler, vaInformer, pvInformer, workqueue.DefaultControllerRateLimiter(), workqueue.DefaultControllerRateLimiter(), test.listerResponse != nil, 1*time.Minute)
+		ctrl := NewCSIAttachController(client, testAttacherName, handler, vaInformer, pvInformer, poInformer, workqueue.DefaultControllerRateLimiter(), workqueue.DefaultControllerRateLimiter(), test.listerResponse != nil, 1*time.Minute)
 
 		// Start the test by enqueueing the right event
 		if test.addedVA != nil {
@@ -493,7 +496,17 @@ func (f *fakeCSIConnection) Attach(ctx context.Context, volumeID string, readOnl
 	}
 	// Update the published volume map
 	f.lister.Add(call.volumeHandle, call.nodeID)
-	return call.metadata, call.detached, call.err
+
+	ro := "false"
+	if readOnly {
+		ro = "true"
+	}
+	// return call.metadata, call.detached, call.err
+	if len(call.metadata) != 0 {
+		call.metadata[readonlyAttachmentKey] = ro
+		return call.metadata, call.detached, call.err
+	}
+	return map[string]string{readonlyAttachmentKey: ro}, call.detached, call.err
 }
 
 func (f *fakeCSIConnection) Detach(ctx context.Context, volumeID string, nodeID string, secrets map[string]string) error {
