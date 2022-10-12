@@ -44,7 +44,7 @@ func (h *csiHandler) checkIfReadonlyMount(va *storage.VolumeAttachment) (bool, e
 			continue
 		}
 
-		if po.Status.Phase != v1.PodRunning {
+		if po.Status.Phase == v1.PodRunning || po.Status.Phase == v1.PodFailed {
 			continue
 		}
 
@@ -74,14 +74,14 @@ func (h *csiHandler) checkIfReadonlyMount(va *storage.VolumeAttachment) (bool, e
 
 }
 
-func (h *csiHandler) checkMountAvailability(va *storage.VolumeAttachment, readOnly bool) (bool, string, error) {
+func (h *csiHandler) checkMountAvailability(va *storage.VolumeAttachment, readOnly bool) (bool, error) {
 	vas, err := h.vaLister.List(labels.Everything())
 	if err != nil {
-		return false, "", fmt.Errorf("list volume attachments, %w", err)
+		return false, fmt.Errorf("list volume attachments, %w", err)
 	}
 
 	node := va.Spec.NodeName
-	attachInfo := ""
+
 	for _, target := range vas {
 		if va.Spec.Source.PersistentVolumeName != nil {
 			if *target.Spec.Source.PersistentVolumeName != *va.Spec.Source.PersistentVolumeName {
@@ -94,28 +94,22 @@ func (h *csiHandler) checkMountAvailability(va *storage.VolumeAttachment, readOn
 
 			if target.Status.Attached {
 				if target.Status.AttachmentMetadata[readonlyAttachmentKey] == "true" {
-					attachInfo = "Already mounted as readonly by other node, can only be mounted with readonly."
 					if readOnly {
 						// ROX
-						return true, attachInfo, nil
+						return true, nil
 					}
 					// any write attempt change to ROX or trigger error for release pod info
-					return false, attachInfo, nil
+					return false, nil
 				}
 				// attached as RWO, cannot be attached by other node anymore
-				return false, attachInfo, errors.New("volume may be attached to another node read/write already, can not be attached anymore")
+				return false, errors.New("volume may be attached to another node read/write already, can not be attached anymore")
 
 			}
 		}
 
 	}
-	if readOnly {
-		attachInfo = "mounted as readonly"
-	} else {
-		attachInfo = "mounted as readwrite"
-	}
 
-	return true, attachInfo, nil
+	return true, nil
 }
 
 func (h *csiHandler) getClaimName(pvName string) (*types.NamespacedName, error) {

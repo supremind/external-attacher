@@ -491,13 +491,26 @@ func (h *csiHandler) csiAttach(va *storage.VolumeAttachment) (*storage.VolumeAtt
 	if err != nil {
 		return va, nil, err
 	}
+
+	// podRO := readOnly
+	// if va.Status.AttachmentMetadata != nil {
+	// 	metadata := make(map[string]string)
+	// 	if pod != "" {
+	// 		metadata[pod] = "readOnly"
+	// 		if !podRO {
+	// 			metadata[pod] = "readWrite"
+	// 		}
+	// 	}
+	// 	return va, metadata, nil
+	// }
+
 	if !h.supportsPublishReadOnly {
 		// "CO MUST set this field to false if SP does not have the
 		// PUBLISH_READONLY controller capability"
 		readOnly = false
 	}
 
-	mount, info, err := h.checkMountAvailability(va, readOnly)
+	mount, err := h.checkMountAvailability(va, readOnly)
 	if err != nil {
 		return va, nil, err
 	}
@@ -542,7 +555,11 @@ func (h *csiHandler) csiAttach(va *storage.VolumeAttachment) (*storage.VolumeAtt
 	if _, ok := attachResponse[readonlyAttachmentKey]; !ok {
 		return va, nil, fmt.Errorf("controllerPublishVolume failed to proceed")
 	}
-	attachResponse["attachInfo"] = info
+
+	// attachResponse[pod] = "readOnly"
+	// if !podRO {
+	// 	attachResponse[pod] = "readWrite"
+	// }
 	return va, attachResponse, nil
 }
 
@@ -623,6 +640,19 @@ func (h *csiHandler) saveAttachError(va *storage.VolumeAttachment, err error) (*
 		return va, err
 	}
 	klog.V(4).Infof("Saved attach error to %q", va.Name)
+	return newVa, nil
+}
+
+func (h *csiHandler) saveMetaData(va *storage.VolumeAttachment, metadata map[string]string) (*storage.VolumeAttachment, error) {
+	clone := va.DeepCopy()
+	clone.Status.AttachmentMetadata = metadata
+
+	var newVa *storage.VolumeAttachment
+	var err error
+	if newVa, err = h.patchVA(va, clone, "status"); err != nil {
+		return va, err
+	}
+	klog.V(4).Infof("Saved attach metadata to %q", va.Name)
 	return newVa, nil
 }
 
