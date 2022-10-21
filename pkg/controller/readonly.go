@@ -44,10 +44,6 @@ func (h *csiHandler) checkIfReadonlyMount(va *storage.VolumeAttachment) (bool, e
 			continue
 		}
 
-		if po.Status.Phase == v1.PodRunning || po.Status.Phase == v1.PodFailed {
-			continue
-		}
-
 		for _, vol := range po.Spec.Volumes {
 			if vol.PersistentVolumeClaim != nil {
 				if vol.PersistentVolumeClaim.ClaimName == claim.Name {

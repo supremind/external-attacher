@@ -492,18 +492,6 @@ func (h *csiHandler) csiAttach(va *storage.VolumeAttachment) (*storage.VolumeAtt
 		return va, nil, err
 	}
 
-	// podRO := readOnly
-	// if va.Status.AttachmentMetadata != nil {
-	// 	metadata := make(map[string]string)
-	// 	if pod != "" {
-	// 		metadata[pod] = "readOnly"
-	// 		if !podRO {
-	// 			metadata[pod] = "readWrite"
-	// 		}
-	// 	}
-	// 	return va, metadata, nil
-	// }
-
 	if !h.supportsPublishReadOnly {
 		// "CO MUST set this field to false if SP does not have the
 		// PUBLISH_READONLY controller capability"
