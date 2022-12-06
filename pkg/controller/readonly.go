@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 
-	v1 "k8s.io/api/core/v1"
 	storage "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
@@ -90,12 +89,10 @@ func (h *csiHandler) checkMountAvailability(va *storage.VolumeAttachment, readOn
 
 			if target.Status.Attached {
 				if target.Status.AttachmentMetadata[readonlyAttachmentKey] == "true" {
-					if readOnly {
-						// ROX
-						return true, nil
-					}
-					// any write attempt change to ROX or trigger error for release pod info
-					return false, nil
+					return true, nil
+				}
+				if _, ok := target.Status.AttachmentMetadata[readonlyAttachmentKey]; !ok {
+					return true, nil
 				}
 				// attached as RWO, cannot be attached by other node anymore
 				return false, errors.New("volume may be attached to another node read/write already, can not be attached anymore")
@@ -105,7 +102,7 @@ func (h *csiHandler) checkMountAvailability(va *storage.VolumeAttachment, readOn
 
 	}
 
-	return true, nil
+	return false, nil
 }
 
 func (h *csiHandler) getClaimName(pvName string) (*types.NamespacedName, error) {

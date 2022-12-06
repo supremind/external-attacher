@@ -492,18 +492,16 @@ func (h *csiHandler) csiAttach(va *storage.VolumeAttachment) (*storage.VolumeAtt
 		return va, nil, err
 	}
 
-	if !h.supportsPublishReadOnly {
-		// "CO MUST set this field to false if SP does not have the
-		// PUBLISH_READONLY controller capability"
-		readOnly = false
-	}
-
 	mount, err := h.checkMountAvailability(va, readOnly)
 	if err != nil {
 		return va, nil, err
 	}
-	if !mount {
-		readOnly = true
+	readOnly = mount
+
+	if !h.supportsPublishReadOnly {
+		// "CO MUST set this field to false if SP does not have the
+		// PUBLISH_READONLY controller capability"
+		readOnly = false
 	}
 
 	volumeCapabilities, err := GetVolumeCapabilities(pvSpec, readOnly)
