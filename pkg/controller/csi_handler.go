@@ -24,7 +24,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/kubernetes-csi/csi-lib-utils/connection"
 	"github.com/kubernetes-csi/external-attacher/pkg/attacher"
 	v1 "k8s.io/api/core/v1"
@@ -255,10 +254,11 @@ func (h *csiHandler) syncAttach(va *storage.VolumeAttachment) error {
 			// Just log it, propagate the attach error.
 			klog.V(2).Infof("Failed to save attach error to %q: %s", va.Name, saveErr.Error())
 		}
-		// Add context to the error for logging
 		err := fmt.Errorf("failed to attach: %s", err)
+
 		return err
 	}
+
 	klog.V(2).Infof("Attached %q", va.Name)
 
 	// Mark as attached
@@ -491,6 +491,13 @@ func (h *csiHandler) csiAttach(va *storage.VolumeAttachment) (*storage.VolumeAtt
 	if err != nil {
 		return va, nil, err
 	}
+
+	mount, err := h.checkMountAvailability(va, readOnly)
+	if err != nil {
+		return va, nil, err
+	}
+	readOnly = mount
+
 	if !h.supportsPublishReadOnly {
 		// "CO MUST set this field to false if SP does not have the
 		// PUBLISH_READONLY controller capability"
@@ -500,25 +507,6 @@ func (h *csiHandler) csiAttach(va *storage.VolumeAttachment) (*storage.VolumeAtt
 	volumeCapabilities, err := GetVolumeCapabilities(pvSpec, readOnly)
 	if err != nil {
 		return va, nil, err
-	}
-
-	if volumeCapabilities.AccessMode.Mode == csi.VolumeCapability_AccessMode_MULTI_NODE_READER_ONLY {
-		rox, err := h.checkIfROXMount(va)
-		if err != nil {
-			return va, nil, err
-		}
-		if !rox {
-			return va, nil, errors.New("volume may be attached to another node read/write already, can not be attached read only anymore")
-		}
-	}
-	if volumeCapabilities.AccessMode.Mode == csi.VolumeCapability_AccessMode_SINGLE_NODE_WRITER {
-		attached, err := h.checkIfAttachedToOtherNodes(va)
-		if err != nil {
-			return va, nil, err
-		}
-		if attached {
-			return va, nil, errors.New("volume is already attached to another node, can not be attached r/w anymore")
-		}
 	}
 
 	secrets, err := h.getCredentialsFromPV(csiSource)
@@ -546,15 +534,19 @@ func (h *csiHandler) csiAttach(va *storage.VolumeAttachment) (*storage.VolumeAtt
 	defer cancel()
 	// We're not interested in `detached` return value, the controller will
 	// issue Detach to be sure the volume is really detached.
-	publishInfo, _, err := h.attacher.Attach(ctx, volumeHandle, readOnly, nodeID, volumeCapabilities, attributes, secrets)
+	attachResponse, _, err := h.attacher.Attach(ctx, volumeHandle, readOnly, nodeID, volumeCapabilities, attributes, secrets)
 	if err != nil {
 		return va, nil, err
 	}
-	if _, ok := publishInfo[readonlyAttachmentKey]; !ok {
+	if _, ok := attachResponse[readonlyAttachmentKey]; !ok {
 		return va, nil, fmt.Errorf("controllerPublishVolume failed to proceed")
 	}
 
-	return va, publishInfo, nil
+	// attachResponse[pod] = "readOnly"
+	// if !podRO {
+	// 	attachResponse[pod] = "readWrite"
+	// }
+	return va, attachResponse, nil
 }
 
 func (h *csiHandler) csiDetach(va *storage.VolumeAttachment) (*storage.VolumeAttachment, error) {
@@ -634,6 +626,19 @@ func (h *csiHandler) saveAttachError(va *storage.VolumeAttachment, err error) (*
 		return va, err
 	}
 	klog.V(4).Infof("Saved attach error to %q", va.Name)
+	return newVa, nil
+}
+
+func (h *csiHandler) saveMetaData(va *storage.VolumeAttachment, metadata map[string]string) (*storage.VolumeAttachment, error) {
+	clone := va.DeepCopy()
+	clone.Status.AttachmentMetadata = metadata
+
+	var newVa *storage.VolumeAttachment
+	var err error
+	if newVa, err = h.patchVA(va, clone, "status"); err != nil {
+		return va, err
+	}
+	klog.V(4).Infof("Saved attach metadata to %q", va.Name)
 	return newVa, nil
 }
 

@@ -59,41 +59,17 @@ func (h *csiHandler) checkIfReadonlyMount(va *storage.VolumeAttachment) (bool, e
 						}
 						return false, nil
 					}
+					return true, nil
 				}
 			}
 		}
 	}
 
-	return true, nil
+	return false, fmt.Errorf("no matching conditions")
+
 }
 
-func (h *csiHandler) checkIfROXMount(va *storage.VolumeAttachment) (bool, error) {
-	vas, err := h.vaLister.List(labels.Everything())
-	if err != nil {
-		return false, fmt.Errorf("list volume attachments, %w", err)
-	}
-
-	node := va.Spec.NodeName
-
-	for _, target := range vas {
-		if *target.Spec.Source.PersistentVolumeName != *va.Spec.Source.PersistentVolumeName {
-			continue
-		}
-		// exclude current va itself
-		if target.Spec.NodeName == node {
-			continue
-		}
-
-		if target.Status.Attached && target.Status.AttachmentMetadata[readonlyAttachmentKey] != "true" {
-			return false, nil
-		}
-
-	}
-
-	return true, nil
-}
-
-func (h *csiHandler) checkIfAttachedToOtherNodes(va *storage.VolumeAttachment) (bool, error) {
+func (h *csiHandler) checkMountAvailability(va *storage.VolumeAttachment, readOnly bool) (bool, error) {
 	vas, err := h.vaLister.List(labels.Everything())
 	if err != nil {
 		return false, fmt.Errorf("list volume attachments, %w", err)
@@ -106,17 +82,26 @@ func (h *csiHandler) checkIfAttachedToOtherNodes(va *storage.VolumeAttachment) (
 			if *target.Spec.Source.PersistentVolumeName != *va.Spec.Source.PersistentVolumeName {
 				continue
 			}
+			// exclude current va itself
+			if target.Spec.NodeName == node {
+				continue
+			}
+
+			if target.Status.Attached {
+				if target.Status.AttachmentMetadata[readonlyAttachmentKey] == "true" {
+					return true, nil
+				}
+				if _, ok := target.Status.AttachmentMetadata[readonlyAttachmentKey]; !ok {
+					return true, nil
+				}
+				// attached as RWO, cannot be attached by other node anymore
+				return false, errors.New("volume may be attached to another node read/write already, can not be attached anymore")
+
+			}
 		}
 
-		// // exclude current va itself
-		if target.Spec.NodeName == node {
-			continue
-		}
-		// // fixme: there could be some race condition when another attaching (r/w or ro) is in progress and has not set metadata yet.
-		if target.Status.Attached {
-			return true, nil
-		}
 	}
+
 	return false, nil
 }
 
